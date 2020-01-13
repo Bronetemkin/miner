@@ -1,10 +1,8 @@
-package ru.bronetemkin.miner.data;
+package ru.bronetemkin.miner;
 
-import ru.bronetemkin.miner.data.updates.AbstractFieldUpdate;
-import ru.bronetemkin.miner.data.updates.CellFieldUpdate;
-import ru.bronetemkin.miner.data.updates.CellUpdate;
-import ru.bronetemkin.miner.data.updates.SizeFieldUpdate;
-import ru.bronetemkin.miner.data.updates.UpdateListener;
+import ru.bronetemkin.miner.updates.*;
+import ru.bronetemkin.miner.updates.controllers.EBCtrl;
+import ru.bronetemkin.miner.updates.controllers.EventController;
 
 public class MineField extends MineFieldData {
 
@@ -21,22 +19,10 @@ public class MineField extends MineFieldData {
 
     public MineField(MineFieldData data) {
         this(data.getGameStatus(), data.getCells(), data.getCurFieldSize());
-        addPlayerMoves(data.getPlayerMovesHistory());
     }
 
     public MineField(int gameStatus, MineCell[][] cells, FieldSize fieldSize) {
         super(gameStatus, cells, fieldSize);
-        cellFieldUpdate = new CellFieldUpdate();
-    }
-
-    public void setMineFieldData(MineFieldData data) {
-        setGameStatus(data.getGameStatus());
-        setCells(data.getCells());
-        setCurFieldSize(data.getCurFieldSize());
-    }
-
-    public void setUpdateListener(UpdateListener<AbstractFieldUpdate> updateListener) {
-        this.updateListener = updateListener;
     }
 
     public void openCell(int mode, CellCoordinates coordinates) {
@@ -50,13 +36,12 @@ public class MineField extends MineFieldData {
         }
         if (x >= 0 && x < getSizeX()
                 && y >= 0 && y < getSizeY()) {
-            addPlayerMove(new PlayerMove(mode, new CellCoordinates(x, y)));
             MineCell cell = getCell(x, y);
             switch (mode) {
                 case MODE_NORMAL: {
                     if (!cell.isVisible() && !cell.hasFlag()) {
                         cell.setVisible();
-                        cellFieldUpdate.addUpdate(makeCellUpdate(x, y));
+                        ctrl.push(new CellFieldUpdate(makeCellUpdate(x, y)));
                         if (cell.isMine()) {
                             if (getMovesCount() < 2 && restartWithoutFailIfBlowOnStartup) {
                                 setGameStatus(GAME_RESULT_UNKNOWN);
@@ -76,11 +61,11 @@ public class MineField extends MineFieldData {
                     if (!cell.isVisible()) {
                         if (cell.hasFlag()) {
                             cell.setHasFlag(false);
-                            cellFieldUpdate.addUpdate(makeCellUpdate(x, y));
+                            ctrl.add(new CellFieldUpdate(makeCellUpdate(x, y)));
                         } else {
                             if (getFlagsCount() < getMinesCount()) {
                                 cell.setHasFlag(true);
-                                cellFieldUpdate.addUpdate(makeCellUpdate(x, y));
+                                ctrl.add(new CellFieldUpdate(makeCellUpdate(x, y)));
                             }
                         }
                     }
@@ -91,12 +76,10 @@ public class MineField extends MineFieldData {
         if (getInvisibleCellsCount() == getMinesCount()) {
             setGameStatus(GAME_RESULT_SUCCESS);
             openAll();
+            ctrl.add(new GameResultUpdate(getMovesCount(), this));
         }
-        finishUpdate(getGameStatus());
-    }
-
-    private CellUpdate makeCellUpdate(CellCoordinates coordinates) {
-        return makeCellUpdate(coordinates.getX(), coordinates.getY());
+        incrementMovesCount();
+        ctrl.pushAll();
     }
 
     private CellUpdate makeCellUpdate(int x, int y) {
@@ -106,18 +89,12 @@ public class MineField extends MineFieldData {
     public void cheat() {
         setGameStatus(GAME_RESULT_SUCCESS);
         openAll();
-        finishUpdate(GAME_RESULT_SUCCESS);
+
+        ctrl.push(new GameResultUpdate(getMovesCount(), this));
     }
 
     public void update() {
-        log("update");
-        updateListener.onUpdate(new SizeFieldUpdate(getSizeX(), getSizeY()));
-//        for (PlayerMove move : getPlayerMovesHistory()) {
-//            openCell(move.getMode(), move.getCoordinates());
-//            cellFieldUpdate.addUpdate(makeCellUpdate(move.getCoordinates()));
-//        }
-        updateListener.onUpdate(cellFieldUpdate);
-//        updateListener.onUpdate(new PlayerMovementUpdate(getGameStatus(), getPlayerMovesHistory()));
+        ctrl.push(new SizeFieldUpdate(getCurFieldSize()));
     }
 
     public void generate() {
@@ -128,8 +105,8 @@ public class MineField extends MineFieldData {
         setCurFieldSize(size);
         setCells(MineFieldFactory.generateMineField(size));
         setGameStatus(GAME_RESULT_UNKNOWN);
-        clearPlayerMovesHistory();
-        updateListener.onUpdate(new SizeFieldUpdate(getSizeX(), getSizeY()));
+        ctrl.push(new SizeFieldUpdate(getCurFieldSize()));
+        CellFieldUpdateList list = new CellFieldUpdateList();
         for (int i = 0; i < getSizeX(); i++) {
             for (int j = 0; j < getSizeY(); j++) {
                 list.add(new CellFieldUpdate(makeCellUpdate(i, j)));
