@@ -1,7 +1,7 @@
-package ru.bronetemkin.miner.data.updates;
+package ru.bronetemkin.miner.updates;
 
-import ru.bronetemkin.miner.data.CellCoordinates;
-import ru.bronetemkin.miner.data.MineCell;
+import ru.bronetemkin.miner.CellCoordinates;
+import ru.bronetemkin.miner.MineCell;
 
 public class CellUpdate {
 

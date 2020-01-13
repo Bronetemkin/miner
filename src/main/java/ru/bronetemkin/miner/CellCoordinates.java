@@ -1,4 +1,4 @@
-package ru.bronetemkin.miner.data;
+package ru.bronetemkin.miner;
 
 public class CellCoordinates {
 

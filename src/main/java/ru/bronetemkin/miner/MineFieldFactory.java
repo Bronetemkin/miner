@@ -1,34 +1,11 @@
-package ru.bronetemkin.miner.data;
+package ru.bronetemkin.miner;
 
 import java.util.Random;
 
 public class MineFieldFactory {
 
-    public static final int FIELD_SIZE_LARGE = 34,
-            FIELD_SIZE_MEDIUM = 18,
-            FIELD_SIZE_SMALL = 12;
-
     public static MineCell[][] generateMineField(FieldSize size) {
-        int fieldSize,
-                minesCount;
-        switch (size) {
-            default: {
-                fieldSize = FIELD_SIZE_SMALL;
-                minesCount = 10;
-                break;
-            }
-            case MEDIUM: {
-                fieldSize = FIELD_SIZE_MEDIUM;
-                minesCount = 40;
-                break;
-            }
-            case BIG: {
-                fieldSize = FIELD_SIZE_LARGE;
-                minesCount = 99;
-                break;
-            }
-        }
-        MineCell[][] cells = plantMines(fieldSize, fieldSize, minesCount);
+        MineCell[][] cells = plantMines(size.getSizeX(), size.getSizeY(), size.getMinesCount());
         cells = makeMinesCount(cells);
         cells = trimField(cells);
         return cells;

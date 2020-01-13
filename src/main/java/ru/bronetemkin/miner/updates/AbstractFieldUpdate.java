@@ -1,6 +1,6 @@
-package ru.bronetemkin.miner.data.updates;
+package ru.bronetemkin.miner.updates;
 
-import ru.bronetemkin.miner.data.MineField;
+import ru.bronetemkin.miner.MineField;
 
 public class AbstractFieldUpdate<T> {
 
